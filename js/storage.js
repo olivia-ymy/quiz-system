@@ -70,3 +70,23 @@ function importProgress(file) {
     reader.readAsText(file);
   });
 }
+
+// 题库元数据管理（增强版）
+function saveQuizMeta(metaArray) {
+  localStorage.setItem('quiz_meta', JSON.stringify(metaArray));
+}
+
+function updateQuizStats(quizName, stats) {
+  const metaRaw = localStorage.getItem('quiz_meta');
+  let meta = metaRaw ? JSON.parse(metaRaw) : [];
+  const idx = meta.findIndex(m => m.name === quizName);
+  if (idx >= 0) {
+    meta[idx] = { ...meta[idx], ...stats };
+  }
+  localStorage.setItem('quiz_meta', JSON.stringify(meta));
+}
+
+function getQuizMeta() {
+  const raw = localStorage.getItem('quiz_meta');
+  return raw ? JSON.parse(raw) : [];
+}
