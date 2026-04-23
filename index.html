@@ -14,6 +14,7 @@
         <button id="btn-practice" class="active">随机练习</button>
         <button id="btn-wrong">错题本</button>
         <button id="btn-stats">统计</button>
+        <button id="btn-fav">收藏</button>
       </nav>
     </header>
 
@@ -21,6 +22,10 @@
     <div id="import-section">
       <h2>选择题库</h2>
       <div id="quiz-list"></div>
+      <div id="chapter-section" style="margin-top:1rem;display:none;">
+        <div style="font-size:0.9rem;color:#666;margin-bottom:0.5rem;">按章节练习：</div>
+        <div id="chapter-list" style="display:flex;flex-wrap:wrap;gap:0.5rem;"></div>
+      </div>
       <div style="margin-top:1rem;display:flex;gap:0.5rem;align-items:center;">
         <span style="font-size:0.9rem;color:#666;">练习模式：</span>
         <button id="btn-mode-seq" style="padding:0.3rem 0.8rem;border:1px solid #3498db;background:white;color:#3498db;border-radius:4px;cursor:pointer;">顺序练习</button>
@@ -81,6 +86,12 @@
       </div>
       <button id="btn-export">导出进度</button>
       <button id="btn-import-progress">导入进度</button>
+    </div>
+
+    <!-- 收藏 -->
+    <div id="favorites-area" class="hidden" style="max-width:700px;margin:1rem auto;padding:0 1rem;">
+      <h2>⭐ 收藏本题（共 <span id="fav-count">0</span> 题）</h2>
+      <div id="fav-list" style="margin-top:1rem;"></div>
     </div>
   </div>
 
