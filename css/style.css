@@ -71,16 +71,17 @@ header nav button.active {
 
 #progress-bar {
   background: #e0e0e0;
-  border-radius: 10px;
-  height: 8px;
+  border-radius: 12px;
+  height: 12px;
   margin-bottom: 1.5rem;
   position: relative;
+  overflow: hidden;
 }
 
 #bar-fill {
   background: #27ae60;
   height: 100%;
-  border-radius: 10px;
+  border-radius: 12px;
   transition: width 0.3s;
   width: 0%;
 }
@@ -95,9 +96,9 @@ header nav button.active {
 
 #question-card {
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
   margin-bottom: 1rem;
 }
 
@@ -112,13 +113,15 @@ header nav button.active {
 
 #options label {
   display: block;
-  padding: 0.7rem 1rem;
-  margin-bottom: 0.5rem;
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
+  padding: 0.9rem 1.2rem;
+  margin-bottom: 0.6rem;
+  background: #fafafa;
+  border: 2px solid #e8e8e8;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 #options label:hover { border-color: #3498db; background: #ebf5fb; }
