@@ -5,6 +5,7 @@ let currentIndex = 0;
 let selectedAnswers = [];
 let submitted = false;
 let currentMode = 'practice';
+let practiceMode = 'random'; // 'random' | 'sequential'
 
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
@@ -24,16 +25,30 @@ fileInput.addEventListener('change', async () => {
   if (!file) return;
   try {
     currentQuiz = await loadQuestionsFromFile(file);
-    questions = shuffleArray([...currentQuiz.questions]);
+    
+    // 默认随机模式
+    practiceMode = 'random';
+    document.getElementById('btn-mode-rand').style.background = '#27ae60';
+    document.getElementById('btn-mode-rand').style.color = 'white';
+    document.getElementById('btn-mode-seq').style.background = 'white';
+    document.getElementById('btn-mode-seq').style.color = '#3498db';
+    
+    if (practiceMode === 'random') {
+      questions = shuffleArray([...currentQuiz.questions]);
+    } else {
+      questions = [...currentQuiz.questions];
+    }
     questions.forEach((q, i) => { q.id = i; q.quizName = currentQuiz.name; });
     
-    // 保存到 quiz_meta
-    const metaRaw = localStorage.getItem('quiz_meta');
-    let meta = metaRaw ? JSON.parse(metaRaw) : [];
-    if (!meta.some(m => m.name === currentQuiz.name)) {
+    // 保存到 quiz_meta（增强版）
+    const meta = getQuizMeta();
+    const existingIdx = meta.findIndex(m => m.name === currentQuiz.name);
+    if (existingIdx >= 0) {
+      meta[existingIdx] = { name: currentQuiz.name, subject: currentQuiz.subject, total: questions.length };
+    } else {
       meta.push({ name: currentQuiz.name, subject: currentQuiz.subject, total: questions.length });
-      saveQuizMeta(meta);
     }
+    saveQuizMeta(meta);
     
     renderQuizList();
     document.getElementById('import-section').classList.add('hidden');
@@ -46,8 +61,7 @@ fileInput.addEventListener('change', async () => {
 });
 
 function renderQuizList() {
-  const metaRaw = localStorage.getItem('quiz_meta');
-  const meta = metaRaw ? JSON.parse(metaRaw) : [];
+  const meta = getQuizMeta();
   const list = document.getElementById('quiz-list');
   
   if (meta.length === 0) {
@@ -59,9 +73,9 @@ function renderQuizList() {
     <div class="quiz-item" data-name="${m.name}">
       <div>
         <div class="quiz-item-name">${m.name}</div>
-        <div class="quiz-item-info">${m.subject} · ${m.total} 题</div>
+        <div class="quiz-item-info">${m.subject || ''} · ${m.total} 题</div>
       </div>
-      <button class="quiz-load-btn" data-name="${m.name}">选择</button>
+      <button class="quiz-load-btn" data-name="${m.name}">加载</button>
     </div>
   `).join('');
   
@@ -69,9 +83,6 @@ function renderQuizList() {
     btn.style.cssText = 'padding:0.3rem 0.8rem;background:#3498db;color:white;border:none;border-radius:4px;cursor:pointer;';
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const name = btn.dataset.name;
-      // 查找本地存储的题库（通过 name 匹配）
-      // 简化处理：提示用户手动加载
       alert('请通过"加载题库 JSON"按钮加载对应文件');
     });
   });
@@ -303,7 +314,37 @@ importProgressInput.addEventListener('change', async () => {
   }
 });
 
+// 模式切换逻辑
+document.getElementById('btn-mode-seq').addEventListener('click', () => {
+  practiceMode = 'sequential';
+  document.getElementById('btn-mode-seq').style.background = '#3498db';
+  document.getElementById('btn-mode-seq').style.color = 'white';
+  document.getElementById('btn-mode-rand').style.background = 'white';
+  document.getElementById('btn-mode-rand').style.color = '#27ae60';
+  if (currentQuiz) {
+    if (practiceMode === 'random') {
+      questions = shuffleArray([...currentQuiz.questions]);
+    } else {
+      questions = [...currentQuiz.questions];
+    }
+    showQuestion(0);
+  }
+});
 
-
+document.getElementById('btn-mode-rand').addEventListener('click', () => {
+  practiceMode = 'random';
+  document.getElementById('btn-mode-rand').style.background = '#27ae60';
+  document.getElementById('btn-mode-rand').style.color = 'white';
+  document.getElementById('btn-mode-seq').style.background = 'white';
+  document.getElementById('btn-mode-seq').style.color = '#3498db';
+  if (currentQuiz) {
+    if (practiceMode === 'random') {
+      questions = shuffleArray([...currentQuiz.questions]);
+    } else {
+      questions = [...currentQuiz.questions];
+    }
+    showQuestion(0);
+  }
+});
 
 renderQuizList();
