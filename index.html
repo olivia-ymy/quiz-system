@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>初级会计答题系统</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>📝 初级会计答题系统</h1>
+      <nav>
+        <button id="btn-practice" class="active">随机练习</button>
+        <button id="btn-wrong">错题本</button>
+        <button id="btn-stats">统计</button>
+      </nav>
+    </header>
+
+    <!-- 题库选择 -->
+    <div id="import-section">
+      <h2>选择题库</h2>
+      <div id="quiz-list"></div>
+      <p style="font-size:0.85rem;color:#888;margin-top:0.5rem;">首次使用：先准备好 data/questions_*.json 文件</p>
+    </div>
+
+    <!-- 题目区域 -->
+    <main id="question-area" class="hidden">
+      <div id="quiz-name" style="text-align:center;color:#666;font-size:0.9rem;margin-bottom:0.5rem;"></div>
+      <div id="progress-bar">
+        <span id="progress-text">1/100</span>
+        <div id="bar-fill"></div>
+      </div>
+      
+      <div id="question-card">
+        <div id="question-type"></div>
+        <div id="question-text"></div>
+        <div id="options"></div>
+      </div>
+
+      <div id="action-row">
+        <button id="btn-submit" disabled>提交答案</button>
+        <button id="btn-next" class="hidden">下一题</button>
+        <button id="btn-prev">上一题</button>
+      </div>
+
+      <div id="feedback" class="hidden">
+        <div id="correctness"></div>
+        <div id="explanation"></div>
+      </div>
+    </main>
+
+    <!-- 错题本 -->
+    <div id="wrong-area" class="hidden">
+      <h2>❌ 错题本（共 <span id="wrong-count">0</span> 题）</h2>
+      <div id="wrong-list"></div>
+      <button id="btn-clear-wrong">清空错题本</button>
+    </div>
+
+    <!-- 统计 -->
+    <div id="stats-area" class="hidden">
+      <h2>📊 学习统计</h2>
+      <div id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">总练习次数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-correct">0</div>
+          <div class="stat-label">正确次数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-accuracy">0%</div>
+          <div class="stat-label">正确率</div>
+        </div>
+      </div>
+      <button id="btn-export">导出进度</button>
+      <button id="btn-import-progress">导入进度</button>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
