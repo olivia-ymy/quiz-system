@@ -6,6 +6,9 @@ let selectedAnswers = [];
 let submitted = false;
 let currentMode = 'practice';
 let practiceMode = 'random'; // 'random' | 'sequential'
+let wrongMode = false;       // 是否在错题练习模式
+let currentWrongIndex = 0;
+let currentFavorites = []; // 当前收藏列表（按章节分组）
 
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
@@ -51,6 +54,7 @@ fileInput.addEventListener('change', async () => {
     saveQuizMeta(meta);
     
     renderQuizList();
+    renderChapterList(currentQuiz);
     document.getElementById('import-section').classList.add('hidden');
     document.getElementById('question-area').classList.remove('hidden');
     document.getElementById('quiz-name').textContent = currentQuiz.name;
@@ -59,6 +63,53 @@ fileInput.addEventListener('change', async () => {
     alert('加载失败：' + err.message);
   }
 });
+
+function getChapters(quiz) {
+  const chapters = {};
+  quiz.questions.forEach(q => {
+    const ch = extractChapter(q.question);
+    if (ch) {
+      if (!chapters[ch]) chapters[ch] = [];
+      chapters[ch].push(q);
+    }
+  });
+  return chapters;
+}
+
+function renderChapterList(quiz) {
+  const chapterSection = document.getElementById('chapter-section');
+  const chapterList = document.getElementById('chapter-list');
+  const chapters = getChapters(quiz);
+  const chapterKeys = Object.keys(chapters).sort();
+
+  if (chapterKeys.length === 0) {
+    chapterSection.style.display = 'none';
+    return;
+  }
+
+  chapterSection.style.display = 'block';
+  chapterList.innerHTML = chapterKeys.map(ch => `
+    <button class="chapter-btn" data-chapter="${ch}" style="padding:0.3rem 0.7rem;border:1px solid #9b59b6;background:white;color:#9b59b6;border-radius:20px;cursor:pointer;font-size:0.85rem;">
+      ${ch} <span style="font-size:0.75rem;">(${chapters[ch].length}题)</span>
+    </button>
+  `).join('');
+
+  chapterList.querySelectorAll('.chapter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ch = btn.dataset.chapter;
+      startChapterPractice(chapters[ch], ch);
+    });
+  });
+}
+
+function startChapterPractice(chapterQuestions, chapterName) {
+  currentQuiz = { name: `章节练习：${chapterName}`, subject: currentQuiz.subject, total: chapterQuestions.length };
+  questions = [...chapterQuestions];
+  wrongMode = false;
+  document.getElementById('question-area').classList.remove('hidden');
+  document.getElementById('quiz-name').textContent = `📚 ${chapterName}`;
+  showQuestion(0);
+}
 
 function renderQuizList() {
   const meta = getQuizMeta();
@@ -101,7 +152,7 @@ const barFill = document.getElementById('bar-fill');
 const progressText = document.getElementById('progress-text');
 
 function showQuestion(index) {
-  if (currentMode !== 'practice' || questions.length === 0) return;
+  if ((currentMode !== 'practice' || questions.length === 0) && !wrongMode) return;
   const q = questions[index];
   currentIndex = index;
   selectedAnswers = [];
@@ -111,7 +162,31 @@ function showQuestion(index) {
     : q.type === 'multi' ? '【多选题】' 
     : '【判断题】';
   questionText.textContent = q.question;
-  
+
+  // 渲染收藏按钮
+  const bookmarkBtn = document.createElement('button');
+  bookmarkBtn.id = 'btn-bookmark';
+  bookmarkBtn.style.cssText = 'float:right;background:transparent;border:1px solid #ddd;color:#888;padding:0.2rem 0.6rem;border-radius:4px;cursor:pointer;font-size:0.8rem;';
+  const isFav = isFavorited(q.question, q.quizName);
+  bookmarkBtn.textContent = isFav ? '★ 已收藏' : '☆ 收藏';
+  bookmarkBtn.onclick = () => {
+    if (isFavorited(q.question, q.quizName)) {
+      removeFavorite(q.question, q.quizName);
+      bookmarkBtn.textContent = '☆ 收藏';
+      bookmarkBtn.style.color = '#888';
+    } else {
+      addFavorite(q);
+      bookmarkBtn.textContent = '★ 已收藏';
+      bookmarkBtn.style.color = '#f39c12';
+    }
+  };
+  if (isFav) {
+    bookmarkBtn.style.color = '#f39c12';
+  }
+  // 插入到 question-card 的顶部
+  const card = document.getElementById('question-card');
+  card.insertBefore(bookmarkBtn, card.firstChild);
+
   optionsDiv.innerHTML = '';
   
   if (q.type === 'truefalse') {
@@ -162,6 +237,7 @@ function showQuestion(index) {
   progressText.textContent = `${index + 1}/${questions.length}`;
 
   btnSubmit.disabled = true;
+  btnSubmit.classList.remove('hidden');
   btnNext.classList.add('hidden');
   btnPrev.disabled = index === 0;
   feedback.classList.add('hidden');
@@ -178,6 +254,10 @@ btnSubmit.addEventListener('click', () => {
   if (correct) {
     feedback.style.borderLeftColor = '#27ae60';
     correctnessDiv.textContent = '✅ 回答正确！';
+    if (wrongMode) {
+      // 答对了，从错题本移除
+      removeWrongQuestion(q.question, q.quizName);
+    }
   } else {
     feedback.style.borderLeftColor = '#e74c3c';
     correctnessDiv.textContent = `❌ 回答错误！正确答案：${formatAnswer(q.answer)}`;
@@ -191,7 +271,21 @@ btnSubmit.addEventListener('click', () => {
 });
 
 btnNext.addEventListener('click', () => {
-  if (currentIndex < questions.length - 1) showQuestion(currentIndex + 1);
+  if (wrongMode) {
+    // 错题练习模式：答对自动移除，答错继续
+    if (currentIndex < questions.length - 1) {
+      currentIndex++;
+      showQuestion(currentIndex);
+    } else {
+      // 全部做完，返回错题本
+      wrongMode = false;
+      document.getElementById('question-area').classList.add('hidden');
+      document.getElementById('wrong-area').classList.remove('hidden');
+      renderWrongList();
+    }
+  } else {
+    if (currentIndex < questions.length - 1) showQuestion(currentIndex + 1);
+  }
 });
 
 btnPrev.addEventListener('click', () => {
@@ -237,26 +331,35 @@ document.getElementById('btn-practice').addEventListener('click', () => {
   if (questions.length === 0) { alert('请先加载题库'); return; }
   switchMode('practice');
 });
-document.getElementById('btn-wrong').addEventListener('click', () => switchMode('wrong'));
+document.getElementById('btn-wrong').addEventListener('click', () => {
+  switchMode('wrong');
+});
 document.getElementById('btn-stats').addEventListener('click', () => switchMode('stats'));
+document.getElementById('btn-fav').addEventListener('click', () => switchMode('favorites'));
 
 function switchMode(mode) {
   currentMode = mode;
+  wrongMode = false;
   document.querySelectorAll('header nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('btn-' + mode).classList.add('active');
   
   document.getElementById('question-area').classList.add('hidden');
   document.getElementById('wrong-area').classList.add('hidden');
   document.getElementById('stats-area').classList.add('hidden');
+  document.getElementById('favorites-area').classList.add('hidden');
   
   if (mode === 'practice' && questions.length > 0) {
     document.getElementById('question-area').classList.remove('hidden');
   } else if (mode === 'wrong') {
+    wrongMode = false;
     document.getElementById('wrong-area').classList.remove('hidden');
     renderWrongList();
   } else if (mode === 'stats') {
     document.getElementById('stats-area').classList.remove('hidden');
     renderStats();
+  } else if (mode === 'favorites') {
+    document.getElementById('favorites-area').classList.remove('hidden');
+    renderFavoritesList();
   }
 }
 
@@ -270,12 +373,69 @@ function renderWrongList() {
     return;
   }
   
-  list.innerHTML = progress.wrongQuestions.map((q, i) => `
-    <div class="wrong-item">
-      <div class="wrong-q">${i + 1}. ${q.question}</div>
-      <div class="wrong-detail">题库：${q.quizName} | 你的答案：${formatAnswer(q.yourAnswer)} | 正确答案：${formatAnswer(q.correctAnswer)}</div>
+  list.innerHTML = `
+    <div style="margin-bottom:1rem;">
+      <button id="btn-practice-wrong" style="padding:0.5rem 1.2rem;background:#e74c3c;color:white;border:none;border-radius:6px;cursor:pointer;font-size:1rem;">开始练习错题 (${progress.wrongQuestions.length}题)</button>
+    </div>
+    <div style="margin-bottom:1rem;font-size:0.85rem;color:#888;">点击"开始练习错题"将逐一练习所有错题</div>
+  ` + progress.wrongQuestions.map((q, i) => `
+    <div class="wrong-item" style="position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:start;">
+        <div style="flex:1;">
+          <div class="wrong-q" style="font-size:0.95rem;margin-bottom:0.3rem;">${i + 1}. ${q.question}</div>
+          <div class="wrong-detail" style="font-size:0.8rem;color:#888;">❌ 错 ${q.wrongCount || 1} 次 | 正确答案：${formatAnswer(q.correctAnswer)}</div>
+        </div>
+        <button class="btn-remove-wrong" data-index="${i}" data-question="${encodeURIComponent(q.question)}" data-quiz="${encodeURIComponent(q.quizName)}" style="padding:0.2rem 0.5rem;background:#ddd;color:#666;border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;margin-left:0.5rem;">移除</button>
+      </div>
     </div>
   `).join('');
+  
+  // 绑定开始练习错题按钮
+  const practiceWrongBtn = document.getElementById('btn-practice-wrong');
+  if (practiceWrongBtn) {
+    practiceWrongBtn.addEventListener('click', () => {
+      startWrongPractice();
+    });
+  }
+  
+  // 绑定移除按钮
+  list.querySelectorAll('.btn-remove-wrong').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const question = decodeURIComponent(btn.dataset.question);
+      const quizName = decodeURIComponent(btn.dataset.quizName);
+      if (confirm('确定移除这道错题？')) {
+        removeWrongQuestion(question, quizName);
+        renderWrongList();
+      }
+    });
+  });
+}
+
+function startWrongPractice() {
+  const progress = loadProgress();
+  if (progress.wrongQuestions.length === 0) {
+    alert('暂无错题！');
+    return;
+  }
+  
+  // 将错题加载为题目集
+  currentQuiz = { name: '错题本练习', subject: '错题', total: progress.wrongQuestions.length };
+  questions = progress.wrongQuestions.map((q, i) => ({
+    id: i,
+    quizName: q.quizName,
+    type: q.type,
+    question: q.question,
+    options: q.options,
+    answer: q.correctAnswer,
+    explanation: q.explanation
+  }));
+  wrongMode = true;
+  currentWrongIndex = 0;
+  
+  document.getElementById('wrong-area').classList.add('hidden');
+  document.getElementById('question-area').classList.remove('hidden');
+  document.getElementById('quiz-name').textContent = '❌ 错题本练习';
+  showQuestion(0);
 }
 
 function renderStats() {
@@ -284,6 +444,39 @@ function renderStats() {
   document.getElementById('stat-correct').textContent = p.correctAttempts;
   const acc = p.totalAttempts === 0 ? 0 : Math.round(p.correctAttempts / p.totalAttempts * 100);
   document.getElementById('stat-accuracy').textContent = acc + '%';
+}
+
+function renderFavoritesList() {
+  const favs = getFavorites();
+  const list = document.getElementById('fav-list');
+  document.getElementById('fav-count').textContent = favs.length;
+
+  if (favs.length === 0) {
+    list.innerHTML = '<p style="text-align:center;color:#888;padding:2rem;">暂无收藏题目 📝</p>';
+    return;
+  }
+
+  list.innerHTML = favs.map((f, i) => `
+    <div class="wrong-item" style="position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:start;">
+        <div style="flex:1;">
+          <div style="font-size:0.8rem;color:#9b59b6;margin-bottom:0.3rem;">${f.chapter || '未分类'}</div>
+          <div class="wrong-q" style="font-size:0.95rem;margin-bottom:0.3rem;">${i + 1}. ${f.question}</div>
+          <div class="wrong-detail" style="font-size:0.8rem;color:#888;">正确答案：${formatAnswer(f.answer)}</div>
+        </div>
+        <button class="btn-remove-fav" data-index="${i}" style="padding:0.2rem 0.5rem;background:#ddd;color:#666;border:none;border-radius:4px;cursor:pointer;font-size:0.75rem;margin-left:0.5rem;">移除</button>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.btn-remove-fav').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.index);
+      const fav = getFavorites()[idx];
+      removeFavorite(fav.question, fav.quizName);
+      renderFavoritesList();
+    });
+  });
 }
 
 document.getElementById('btn-clear-wrong').addEventListener('click', () => {
