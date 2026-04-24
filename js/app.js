@@ -30,8 +30,8 @@ async function verifyInviteCode() {
       btn.disabled = false;
       btn.textContent = '验证进入';
     }
-  } catch {
-    errorEl.textContent = '网络错误，请重试';
+  } catch (e) {
+    errorEl.textContent = '网络错误：' + (e.message || '无法连接服务器');
     btn.disabled = false;
     btn.textContent = '验证进入';
   }
