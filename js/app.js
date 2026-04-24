@@ -498,5 +498,9 @@ function removeWrong(question, quizName) {
   saveProgressCloud();
 }
 
-// 启动
-renderApp();
+// 等待 DOM 就绪后再启动
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', renderApp);
+} else {
+  renderApp();
+}
