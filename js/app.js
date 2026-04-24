@@ -57,7 +57,6 @@ fileInput.addEventListener('change', async () => {
     saveQuizMeta(meta);
     
     renderQuizList();
-    renderChapterList(currentQuiz);
     document.getElementById('import-section').classList.add('hidden');
     document.getElementById('question-area').classList.remove('hidden');
     document.getElementById('quiz-name').textContent = currentQuiz.name;
@@ -66,54 +65,6 @@ fileInput.addEventListener('change', async () => {
     alert('加载失败：' + err.message);
   }
 });
-
-function getChapters(quiz) {
-  const chapters = {};
-  quiz.questions.forEach(q => {
-    const ch = extractChapter(q.question);
-    if (ch) {
-      if (!chapters[ch]) chapters[ch] = [];
-      chapters[ch].push(q);
-    }
-  });
-  return chapters;
-}
-
-function renderChapterList(quiz) {
-  const chapterSection = document.getElementById('chapter-section');
-  const chapterList = document.getElementById('chapter-list');
-  const chapters = getChapters(quiz);
-  const chapterKeys = Object.keys(chapters).sort();
-
-  if (chapterKeys.length === 0) {
-    chapterSection.style.display = 'none';
-    return;
-  }
-
-  chapterSection.style.display = 'block';
-  chapterList.innerHTML = chapterKeys.map(ch => `
-    <button class="chapter-btn" data-chapter="${ch}" style="padding:0.3rem 0.7rem;border:1px solid #9b59b6;background:white;color:#9b59b6;border-radius:20px;cursor:pointer;font-size:0.85rem;">
-      ${ch} <span style="font-size:0.75rem;">(${chapters[ch].length}题)</span>
-    </button>
-  `).join('');
-
-  chapterList.querySelectorAll('.chapter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const ch = btn.dataset.chapter;
-      startChapterPractice(chapters[ch], ch);
-    });
-  });
-}
-
-function startChapterPractice(chapterQuestions, chapterName) {
-  currentQuiz = { name: `章节练习：${chapterName}`, subject: currentQuiz.subject, total: chapterQuestions.length };
-  questions = [...chapterQuestions];
-  sessionAnswered = 0;
-  wrongMode = false;
-  document.getElementById('question-area').classList.remove('hidden');
-  document.getElementById('quiz-name').textContent = `📚 ${chapterName}`;
-  showQuestion(0);
-}
 
 function renderQuizList() {
   const meta = getQuizMeta();
