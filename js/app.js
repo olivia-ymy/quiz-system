@@ -51,6 +51,85 @@ async function initApp() {
 // 直接初始化
 initApp();
 
+// ========== 视图导航 ==========
+function showView(view) {
+  // 更新导航按钮样式
+  ['home','stats','wrong','favorites'].forEach(v => {
+    const btn = document.getElementById('nav-' + v);
+    if (btn) {
+      if (v === view) {
+        btn.style.background = '#667eea';
+        btn.style.color = 'white';
+        btn.style.borderColor = '#667eea';
+      } else {
+        btn.style.background = 'white';
+        btn.style.color = '#666';
+        btn.style.borderColor = '#e0e0e0';
+      }
+    }
+  });
+
+  // 切换内容
+  document.getElementById('view-home').classList.remove('hidden');
+  document.getElementById('view-stats').classList.add('hidden');
+  document.getElementById('view-wrong').classList.add('hidden');
+  document.getElementById('view-favorites').classList.add('hidden');
+
+  if (view === 'stats') {
+    document.getElementById('view-stats').classList.remove('hidden');
+    document.getElementById('view-home').classList.add('hidden');
+    renderStats();
+  } else if (view === 'wrong') {
+    document.getElementById('view-wrong').classList.remove('hidden');
+    document.getElementById('view-home').classList.add('hidden');
+    renderWrongList();
+  } else if (view === 'favorites') {
+    document.getElementById('view-favorites').classList.remove('hidden');
+    document.getElementById('view-home').classList.add('hidden');
+    renderFavoritesList();
+  }
+}
+
+// ========== 上传题库 JSON ==========
+function uploadQuizFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const quiz = JSON.parse(text);
+      if (!quiz.name || !quiz.questions || !Array.isArray(quiz.questions)) {
+        alert('题库格式错误，需要包含 name 和 questions 字段');
+        return;
+      }
+      // 保存到本地题库列表
+      const list = JSON.parse(localStorage.getItem('quiz_list') || '[]');
+      const existing = list.findIndex(q => q.name === quiz.name);
+      if (existing >= 0) {
+        list[existing] = { name: quiz.name, total: quiz.questions.length };
+      } else {
+        list.push({ name: quiz.name, total: quiz.questions.length });
+      }
+      localStorage.setItem('quiz_list', JSON.stringify(list));
+      localStorage.setItem('quiz_' + quiz.name, JSON.stringify(quiz));
+      renderQuizList();
+      alert('题库「' + quiz.name + '」上传成功，共 ' + quiz.questions.length + ' 题');
+    } catch (err) {
+      alert('文件解析失败：' + err.message);
+    }
+  };
+  input.click();
+}
+
+// ========== 旧的上传按钮绑定（兼容）==========
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('btn-upload');
+  if (btn) btn.addEventListener('click', uploadQuizFile);
+});
+
 let currentQuiz = null;       // 当前题库完整数据
 let questions = [];           // 当前题库题目数组
 let currentIndex = 0;
