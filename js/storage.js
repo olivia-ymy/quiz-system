@@ -109,6 +109,19 @@ function updateQuizStats(quizName, stats) {
   localStorage.setItem('quiz_meta', JSON.stringify(meta));
 }
 
+function getAnsweredIds(quizName) {
+  const raw = localStorage.getItem('quiz_answered_' + quizName);
+  return raw ? JSON.parse(raw) : [];
+}
+
+function markAnswered(quizName, questionText) {
+  const answered = getAnsweredIds(quizName);
+  if (!answered.includes(questionText)) {
+    answered.push(questionText);
+    localStorage.setItem('quiz_answered_' + quizName, JSON.stringify(answered));
+  }
+}
+
 function getQuizMeta() {
   const raw = localStorage.getItem('quiz_meta');
   return raw ? JSON.parse(raw) : [];
