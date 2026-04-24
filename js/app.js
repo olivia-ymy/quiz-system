@@ -148,6 +148,12 @@ function showQuestion(index) {
 
   optionsDiv.innerHTML = '';
   
+  if (!q.options || typeof q.options !== 'object') {
+    const allKeys = Object.keys(q);
+    optionsDiv.innerHTML = '<p style="color:#e74c3c;">选项数据缺失（type=' + q.type + '）</p><pre style="font-size:12px;text-align:left;">' + allKeys.join(', ') + '</pre>';
+    return;
+  }
+  
   if (q.type === 'truefalse') {
     ['正确', '错误'].forEach((label, i) => {
       const id = i === 0 ? 'true' : 'false';
@@ -167,7 +173,10 @@ function showQuestion(index) {
       optionsDiv.appendChild(label_el);
     });
   } else {
-    Object.entries(q.options).forEach(([key, val]) => {
+    if (!q.options || Object.keys(q.options).length === 0) {
+      optionsDiv.innerHTML = '<p style="color:#e74c3c;">题目选项数据缺失，请到原题库重新加载后再次答题</p>';
+    } else {
+      Object.entries(q.options).forEach(([key, val]) => {
       const label = document.createElement('label');
       const inputType = q.type === 'multi' ? 'checkbox' : 'radio';
       const input = document.createElement('input');
