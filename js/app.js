@@ -555,4 +555,12 @@ document.getElementById('btn-mode-rand').addEventListener('click', () => {
   }
 });
 
+// 返回主页按钮
+document.getElementById('btn-back-home').addEventListener('click', () => {
+  document.getElementById('question-area').classList.add('hidden');
+  document.getElementById('import-section').classList.remove('hidden');
+  sessionAnswered = 0;
+  answeredText.textContent = '';
+});
+
 renderQuizList();
