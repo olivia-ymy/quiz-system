@@ -7,22 +7,6 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- 邀请码验证界面 -->
-  <div id="invite-screen" style="position:fixed;inset:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;z-index:9999;">
-    <div style="background:white;border-radius:16px;padding:2.5rem 2rem;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-      <h2 style="margin:0 0 0.5rem;color:#333;">📝 答题系统</h2>
-      <p style="color:#888;font-size:0.9rem;margin:0 0 1.5rem;">请输入邀请码继续</p>
-      <input id="invite-input" type="text" placeholder="输入邀请码" autocomplete="off"
-        style="width:100%;padding:0.7rem 1rem;border:2px solid #e0e0e0;border-radius:8px;font-size:1rem;box-sizing:border-box;text-align:center;outline:none;"
-        onkeydown="if(event.key==='Enter')document.getElementById('invite-btn').click()">
-      <p id="invite-error" style="color:#e74c3c;font-size:0.85rem;margin:0.5rem 0 0;min-height:1.2em;"></p>
-      <button id="invite-btn" onclick="verifyInviteCode()"
-        style="width:100%;padding:0.7rem;background:#667eea;color:white;border:none;border-radius:8px;font-size:1rem;cursor:pointer;margin-top:0.8rem;font-weight:bold;">
-        验证进入
-      </button>
-    </div>
-  </div>
-
   <div id="app">
     <header>
       <h1>📝 初级会计答题系统</h1>
