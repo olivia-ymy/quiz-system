@@ -1,21 +1,9 @@
 // app.js
 
-// ========== 云端同步配置 ==========
+// ========== 云端同步配置（全局版） ==========
 const API_BASE = 'https://quiz-api.yangmingyi1998128.workers.dev/quiz-api';
 let inviteCode = localStorage.getItem('quiz_invite_code') || '';
-let userUUID = localStorage.getItem('quiz_uuid') || '';
-
-// 生成或获取 UUID
-function getUUID() {
-  if (!userUUID) {
-    userUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-      const r = Math.random() * 16 | 0;
-      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-    });
-    localStorage.setItem('quiz_uuid', userUUID);
-  }
-  return userUUID;
-}
+let cloudSynced = false; // 是否已从云端同步过
 
 // 验证邀请码
 async function verifyInviteCode() {
@@ -35,7 +23,6 @@ async function verifyInviteCode() {
     if (data.valid) {
       inviteCode = code;
       localStorage.setItem('quiz_invite_code', code);
-      localStorage.setItem('quiz_uuid', getUUID());
       document.getElementById('invite-screen').style.display = 'none';
       await initApp();
     } else {
@@ -52,9 +39,8 @@ async function verifyInviteCode() {
 
 // 云端保存进度
 async function saveProgressCloud() {
-  if (!inviteCode || !userUUID) return;
+  if (!inviteCode) return;
   const progress = {
-    uuid: userUUID,
     timestamp: Date.now(),
     wrongQuestions: JSON.parse(localStorage.getItem('quiz_wrong') || '[]'),
     favorites: JSON.parse(localStorage.getItem('quiz_favorites') || '[]'),
@@ -62,7 +48,7 @@ async function saveProgressCloud() {
     answeredPerQuiz: JSON.parse(localStorage.getItem('quiz_answered') || '{}')
   };
   try {
-    await fetch(API_BASE + '/progress/' + userUUID + '?code=' + encodeURIComponent(inviteCode), {
+    await fetch(API_BASE + '/progress?code=' + encodeURIComponent(inviteCode), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'x-invite-code': inviteCode },
       body: JSON.stringify(progress)
@@ -72,9 +58,9 @@ async function saveProgressCloud() {
 
 // 云端加载进度
 async function loadProgressCloud() {
-  if (!inviteCode || !userUUID) return null;
+  if (!inviteCode) return null;
   try {
-    const resp = await fetch(API_BASE + '/progress/' + userUUID + '?code=' + encodeURIComponent(inviteCode), {
+    const resp = await fetch(API_BASE + '/progress?code=' + encodeURIComponent(inviteCode), {
       headers: { 'x-invite-code': inviteCode }
     });
     const data = await resp.json();
@@ -82,11 +68,11 @@ async function loadProgressCloud() {
   } catch { return null; }
 }
 
-// 应用初始化（验证后调用）
+// 应用初始化
 async function initApp() {
   const cloud = await loadProgressCloud();
+  cloudSynced = true;
   if (cloud) {
-    // 合并云端进度（以云端为准，忽略本地）
     if (cloud.wrongQuestions) localStorage.setItem('quiz_wrong', JSON.stringify(cloud.wrongQuestions));
     if (cloud.favorites) localStorage.setItem('quiz_favorites', JSON.stringify(cloud.favorites));
     if (cloud.stats) localStorage.setItem('quiz_stats', JSON.stringify(cloud.stats));
@@ -98,8 +84,8 @@ async function initApp() {
   renderFavoritesList();
 }
 
-// 启动时检查是否已验证
-if (inviteCode && userUUID) {
+// 启动时检查
+if (inviteCode) {
   document.getElementById('invite-screen').style.display = 'none';
   initApp();
 }
