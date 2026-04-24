@@ -243,7 +243,13 @@ function showQuestion(index) {
   const pct = questions.length > 0 ? ((index + 1) / questions.length) * 100 : 0;
   barFill.style.width = pct + '%';
   progressText.textContent = `${index + 1}/${questions.length}`;
-  answeredText.textContent = `已答 ${sessionAnswered} 题`;
+  if (wrongMode) {
+    answeredText.textContent = `本次已答 ${sessionAnswered} 题`;
+  } else {
+    const totalQ = currentQuiz && currentQuiz.questions ? currentQuiz.questions.length : questions.length;
+    const quizAnswered = currentQuiz ? getAnsweredIds(currentQuiz.name).length : 0;
+    answeredText.textContent = `已做 ${quizAnswered} 题 / 共 ${totalQ} 题`;
+  }
 
   btnSubmit.disabled = true;
   btnSubmit.classList.remove('hidden');
@@ -256,6 +262,7 @@ btnSubmit.addEventListener('click', () => {
   const q = questions[currentIndex];
   submitted = true;
   sessionAnswered++;
+  markAnswered(currentQuiz.name, questions[currentIndex].question);
   const correct = checkAnswer(q, selectedAnswers);
   
   incrementAttempt(correct);
