@@ -1,4 +1,109 @@
 // app.js
+
+// ========== 云端同步配置 ==========
+const API_BASE = 'https://quiz-api.yangmingyi1998128.workers.dev/quiz-api';
+let inviteCode = localStorage.getItem('quiz_invite_code') || '';
+let userUUID = localStorage.getItem('quiz_uuid') || '';
+
+// 生成或获取 UUID
+function getUUID() {
+  if (!userUUID) {
+    userUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+    localStorage.setItem('quiz_uuid', userUUID);
+  }
+  return userUUID;
+}
+
+// 验证邀请码
+async function verifyInviteCode() {
+  const input = document.getElementById('invite-input');
+  const errorEl = document.getElementById('invite-error');
+  const btn = document.getElementById('invite-btn');
+  const code = input.value.trim();
+  if (!code) { errorEl.textContent = '请输入邀请码'; return; }
+  btn.disabled = true;
+  btn.textContent = '验证中...';
+  errorEl.textContent = '';
+  try {
+    const resp = await fetch(API_BASE + '/verify?code=' + encodeURIComponent(code), {
+      headers: { 'x-invite-code': code }
+    });
+    const data = await resp.json();
+    if (data.valid) {
+      inviteCode = code;
+      localStorage.setItem('quiz_invite_code', code);
+      localStorage.setItem('quiz_uuid', getUUID());
+      document.getElementById('invite-screen').style.display = 'none';
+      await initApp();
+    } else {
+      errorEl.textContent = '邀请码无效';
+      btn.disabled = false;
+      btn.textContent = '验证进入';
+    }
+  } catch {
+    errorEl.textContent = '网络错误，请重试';
+    btn.disabled = false;
+    btn.textContent = '验证进入';
+  }
+}
+
+// 云端保存进度
+async function saveProgressCloud() {
+  if (!inviteCode || !userUUID) return;
+  const progress = {
+    uuid: userUUID,
+    timestamp: Date.now(),
+    wrongQuestions: JSON.parse(localStorage.getItem('quiz_wrong') || '[]'),
+    favorites: JSON.parse(localStorage.getItem('quiz_favorites') || '[]'),
+    stats: JSON.parse(localStorage.getItem('quiz_stats') || '{"totalAttempts":0,"correctAttempts":0}'),
+    answeredPerQuiz: JSON.parse(localStorage.getItem('quiz_answered') || '{}')
+  };
+  try {
+    await fetch(API_BASE + '/progress/' + userUUID + '?code=' + encodeURIComponent(inviteCode), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-invite-code': inviteCode },
+      body: JSON.stringify(progress)
+    });
+  } catch (e) { /* silent fail */ }
+}
+
+// 云端加载进度
+async function loadProgressCloud() {
+  if (!inviteCode || !userUUID) return null;
+  try {
+    const resp = await fetch(API_BASE + '/progress/' + userUUID + '?code=' + encodeURIComponent(inviteCode), {
+      headers: { 'x-invite-code': inviteCode }
+    });
+    const data = await resp.json();
+    return data.found ? data.progress : null;
+  } catch { return null; }
+}
+
+// 应用初始化（验证后调用）
+async function initApp() {
+  const cloud = await loadProgressCloud();
+  if (cloud) {
+    // 合并云端进度（以云端为准，忽略本地）
+    if (cloud.wrongQuestions) localStorage.setItem('quiz_wrong', JSON.stringify(cloud.wrongQuestions));
+    if (cloud.favorites) localStorage.setItem('quiz_favorites', JSON.stringify(cloud.favorites));
+    if (cloud.stats) localStorage.setItem('quiz_stats', JSON.stringify(cloud.stats));
+    if (cloud.answeredPerQuiz) localStorage.setItem('quiz_answered', JSON.stringify(cloud.answeredPerQuiz));
+  }
+  renderQuizList();
+  renderWrongList();
+  renderStats();
+  renderFavoritesList();
+}
+
+// 启动时检查是否已验证
+if (inviteCode && userUUID) {
+  document.getElementById('invite-screen').style.display = 'none';
+  initApp();
+}
+
 let currentQuiz = null;       // 当前题库完整数据
 let questions = [];           // 当前题库题目数组
 let currentIndex = 0;
@@ -138,6 +243,7 @@ function showQuestion(index) {
       bookmarkBtn.textContent = '★ 已收藏';
       bookmarkBtn.style.color = '#f39c12';
     }
+    saveProgressCloud();
   };
   if (isFav) {
     bookmarkBtn.style.color = '#f39c12';
@@ -243,6 +349,7 @@ btnSubmit.addEventListener('click', () => {
     addWrongQuestion(q, selectedAnswers);
   }
   explanationDiv.textContent = q.explanation || '';
+  saveProgressCloud();
   highlightOptions(q, selectedAnswers, correct);
   btnSubmit.classList.add('hidden');
   btnNext.classList.remove('hidden');
@@ -384,6 +491,7 @@ function renderWrongList() {
       if (confirm('确定移除这道错题？')) {
         removeWrongQuestion(question, quizName);
         renderWrongList();
+        saveProgressCloud();
       }
     });
   });
@@ -454,6 +562,7 @@ function renderFavoritesList() {
       const fav = getFavorites()[idx];
       removeFavorite(fav.question, fav.quizName);
       renderFavoritesList();
+      saveProgressCloud();
     });
   });
 }
@@ -530,5 +639,3 @@ document.getElementById('btn-back-home').addEventListener('click', () => {
   sessionAnswered = 0;
   answeredText.textContent = '';
 });
-
-renderQuizList();
