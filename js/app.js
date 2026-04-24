@@ -288,9 +288,17 @@ function showQuestion(index) {
   }
 
   // 题目
-  document.getElementById('question-text').textContent = (index + 1) + '. ' + q.question;
+  const q = questions[index];
+  let typeLabel = '';
+  if (q.type === 'truefalse') typeLabel = '【判断题】';
+  else if (q.type === 'multiple') typeLabel = '【多选题】可多选';
+  else typeLabel = '【单选题】';
+
+  document.getElementById('question-text').innerHTML =
+    '<span style="background:#667eea;color:white;padding:2px 8px;border-radius:4px;font-size:0.85rem;margin-right:6px;">' + typeLabel + '</span>' + (index + 1) + '. ' + q.question;
 
   // 选项
+  const isMulti = q.type === 'multiple';
   optionsDiv.innerHTML = '';
   if (!q.options || typeof q.options !== 'object') {
     optionsDiv.innerHTML = '<p style="color:#e74c3c;">题目选项数据缺失</p>';
@@ -301,7 +309,7 @@ function showQuestion(index) {
       const btn = document.createElement('button');
       btn.className = 'option-btn';
       btn.textContent = label;
-      btn.style.cssText = 'display:block;width:100%;padding:0.7rem;margin:0.4rem 0;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:1rem;text-align:left;';
+      btn.style.cssText = 'display:block;width:100%;padding:0.7rem;margin:0.4rem 0;border:2px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:1rem;text-align:left;';
       btn.onclick = () => handleOptionClick(label, btn);
       optionsDiv.appendChild(btn);
     });
@@ -309,8 +317,9 @@ function showQuestion(index) {
     Object.entries(q.options).forEach(([key, val]) => {
       const btn = document.createElement('button');
       btn.className = 'option-btn';
-      btn.textContent = key + '. ' + val;
-      btn.style.cssText = 'display:block;width:100%;padding:0.7rem;margin:0.4rem 0;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:1rem;text-align:left;';
+      btn.dataset.key = key;
+      btn.innerHTML = '<span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;border:2px solid #667eea;margin-right:10px;font-weight:bold;color:#667eea;">' + key + '</span>' + val + (isMulti ? '' : '');
+      btn.style.cssText = 'display:flex;align-items:center;width:100%;padding:0.7rem;margin:0.4rem 0;border:2px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:1rem;text-align:left;';
       btn.onclick = () => handleOptionClick(key, btn);
       optionsDiv.appendChild(btn);
     });
@@ -403,7 +412,8 @@ function checkAnswer(q, selected) {
 function highlightOptions(q, selected, correct) {
   const correctArr = Array.isArray(q.answer) ? q.answer : [q.answer];
   document.querySelectorAll('.option-btn').forEach(btn => {
-    const key = btn.textContent.split('.')[0].trim();
+    const key = btn.dataset.key;
+    if (!key) return;
     if (correctArr.includes(key)) {
       btn.style.background = '#d4edda';
       btn.style.borderColor = '#27ae60';
