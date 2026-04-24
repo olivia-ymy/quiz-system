@@ -1,45 +1,12 @@
 // app.js
 
+// app.js
+
 // ========== 云端同步配置（全局版） ==========
 const API_BASE = 'https://api.oyummy.top/quiz-api';
-let inviteCode = localStorage.getItem('quiz_invite_code') || '';
-let cloudSynced = false; // 是否已从云端同步过
-
-// 验证邀请码
-async function verifyInviteCode() {
-  const input = document.getElementById('invite-input');
-  const errorEl = document.getElementById('invite-error');
-  const btn = document.getElementById('invite-btn');
-  const code = input.value.trim();
-  if (!code) { errorEl.textContent = '请输入邀请码'; return; }
-  btn.disabled = true;
-  btn.textContent = '验证中...';
-  errorEl.textContent = '';
-  try {
-    const resp = await fetch(API_BASE + '/verify?code=' + encodeURIComponent(code), {
-      headers: { 'x-invite-code': code }
-    });
-    const data = await resp.json();
-    if (data.valid) {
-      inviteCode = code;
-      localStorage.setItem('quiz_invite_code', code);
-      document.getElementById('invite-screen').style.display = 'none';
-      await initApp();
-    } else {
-      errorEl.textContent = '邀请码无效';
-      btn.disabled = false;
-      btn.textContent = '验证进入';
-    }
-  } catch (e) {
-    errorEl.textContent = '网络错误：' + (e.message || '无法连接服务器');
-    btn.disabled = false;
-    btn.textContent = '验证进入';
-  }
-}
 
 // 云端保存进度
 async function saveProgressCloud() {
-  if (!inviteCode) return;
   const progress = {
     timestamp: Date.now(),
     wrongQuestions: JSON.parse(localStorage.getItem('quiz_wrong') || '[]'),
@@ -48,9 +15,9 @@ async function saveProgressCloud() {
     answeredPerQuiz: JSON.parse(localStorage.getItem('quiz_answered') || '{}')
   };
   try {
-    await fetch(API_BASE + '/progress?code=' + encodeURIComponent(inviteCode), {
+    await fetch(API_BASE + '/progress', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'x-invite-code': inviteCode },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(progress)
     });
   } catch (e) { /* silent fail */ }
@@ -58,11 +25,9 @@ async function saveProgressCloud() {
 
 // 云端加载进度
 async function loadProgressCloud() {
-  if (!inviteCode) return null;
   try {
-    const resp = await fetch(API_BASE + '/progress?code=' + encodeURIComponent(inviteCode), {
-      headers: { 'x-invite-code': inviteCode }
-    });
+    const resp = await fetch(API_BASE + '/progress');
+    if (!resp.ok) return null;
     const data = await resp.json();
     return data.found ? data.progress : null;
   } catch { return null; }
@@ -71,7 +36,6 @@ async function loadProgressCloud() {
 // 应用初始化
 async function initApp() {
   const cloud = await loadProgressCloud();
-  cloudSynced = true;
   if (cloud) {
     if (cloud.wrongQuestions) localStorage.setItem('quiz_wrong', JSON.stringify(cloud.wrongQuestions));
     if (cloud.favorites) localStorage.setItem('quiz_favorites', JSON.stringify(cloud.favorites));
@@ -84,11 +48,8 @@ async function initApp() {
   renderFavoritesList();
 }
 
-// 启动时检查
-if (inviteCode) {
-  document.getElementById('invite-screen').style.display = 'none';
-  initApp();
-}
+// 直接初始化
+initApp();
 
 let currentQuiz = null;       // 当前题库完整数据
 let questions = [];           // 当前题库题目数组
