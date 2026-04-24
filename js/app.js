@@ -1,7 +1,7 @@
 // app.js
 
 // ========== 云端同步配置（全局版） ==========
-const API_BASE = 'https://quiz-api.yangmingyi1998128.workers.dev/quiz-api';
+const API_BASE = 'https://api.oyummy.top/quiz-api';
 let inviteCode = localStorage.getItem('quiz_invite_code') || '';
 let cloudSynced = false; // 是否已从云端同步过
 
