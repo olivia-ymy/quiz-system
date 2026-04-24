@@ -8,6 +8,7 @@ let currentMode = 'practice';
 let practiceMode = 'random'; // 'random' | 'sequential'
 let wrongMode = false;       // 是否在错题练习模式
 let currentWrongIndex = 0;
+let sessionAnswered = 0; // 本次练习已答题数
 let currentFavorites = []; // 当前收藏列表（按章节分组）
 
 const fileInput = document.createElement('input');
@@ -42,6 +43,8 @@ fileInput.addEventListener('change', async () => {
       questions = [...currentQuiz.questions];
     }
     questions.forEach((q, i) => { q.id = i; q.quizName = currentQuiz.name; });
+    sessionAnswered = 0;
+    answeredText.textContent = '';
     
     // 保存到 quiz_meta（增强版）
     const meta = getQuizMeta();
@@ -105,6 +108,7 @@ function renderChapterList(quiz) {
 function startChapterPractice(chapterQuestions, chapterName) {
   currentQuiz = { name: `章节练习：${chapterName}`, subject: currentQuiz.subject, total: chapterQuestions.length };
   questions = [...chapterQuestions];
+  sessionAnswered = 0;
   wrongMode = false;
   document.getElementById('question-area').classList.remove('hidden');
   document.getElementById('quiz-name').textContent = `📚 ${chapterName}`;
@@ -150,6 +154,7 @@ const correctnessDiv = document.getElementById('correctness');
 const explanationDiv = document.getElementById('explanation');
 const barFill = document.getElementById('bar-fill');
 const progressText = document.getElementById('progress-text');
+const answeredText = document.getElementById('answered-text');
 
 function showQuestion(index) {
   if ((currentMode !== 'practice' || questions.length === 0) && !wrongMode) return;
@@ -238,6 +243,7 @@ function showQuestion(index) {
   const pct = questions.length > 0 ? ((index + 1) / questions.length) * 100 : 0;
   barFill.style.width = pct + '%';
   progressText.textContent = `${index + 1}/${questions.length}`;
+  answeredText.textContent = `已答 ${sessionAnswered} 题`;
 
   btnSubmit.disabled = true;
   btnSubmit.classList.remove('hidden');
@@ -249,6 +255,7 @@ function showQuestion(index) {
 btnSubmit.addEventListener('click', () => {
   const q = questions[currentIndex];
   submitted = true;
+  sessionAnswered++;
   const correct = checkAnswer(q, selectedAnswers);
   
   incrementAttempt(correct);
@@ -433,6 +440,7 @@ function startWrongPractice() {
     explanation: q.explanation
   }));
   wrongMode = true;
+  sessionAnswered = 0;
   currentWrongIndex = 0;
   
   document.getElementById('wrong-area').classList.add('hidden');
@@ -523,6 +531,8 @@ document.getElementById('btn-mode-seq').addEventListener('click', () => {
     } else {
       questions = [...currentQuiz.questions];
     }
+    sessionAnswered = 0;
+    answeredText.textContent = '';
     showQuestion(0);
   }
 });
@@ -539,6 +549,8 @@ document.getElementById('btn-mode-rand').addEventListener('click', () => {
     } else {
       questions = [...currentQuiz.questions];
     }
+    sessionAnswered = 0;
+    answeredText.textContent = '';
     showQuestion(0);
   }
 });
