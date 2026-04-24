@@ -246,8 +246,9 @@ function showQuestion(index) {
   if (wrongMode) {
     answeredText.textContent = `本次已答 ${sessionAnswered} 题`;
   } else {
-    const totalQ = currentQuiz && currentQuiz.questions ? currentQuiz.questions.length : questions.length;
-    const quizAnswered = currentQuiz ? getAnsweredIds(currentQuiz.name).length : 0;
+    const quizKey = questions[currentIndex].quizName;
+    const quizAnswered = getAnsweredIds(quizKey).length;
+    const totalQ = currentQuiz.questions ? currentQuiz.questions.length : questions.length;
     answeredText.textContent = `已做 ${quizAnswered} 题 / 共 ${totalQ} 题`;
   }
 
@@ -262,7 +263,7 @@ btnSubmit.addEventListener('click', () => {
   const q = questions[currentIndex];
   submitted = true;
   sessionAnswered++;
-  markAnswered(currentQuiz.name, questions[currentIndex].question);
+  markAnswered(questions[currentIndex].quizName, questions[currentIndex].question);
   const correct = checkAnswer(q, selectedAnswers);
   
   incrementAttempt(correct);
