@@ -163,7 +163,10 @@ function showQuestion(index) {
     : '【判断题】';
   questionText.textContent = q.question;
 
-  // 渲染收藏按钮
+  // 渲染收藏按钮（先清除旧的，避免重复）
+  const existingBookmark = document.getElementById('btn-bookmark');
+  if (existingBookmark) existingBookmark.remove();
+
   const bookmarkBtn = document.createElement('button');
   bookmarkBtn.id = 'btn-bookmark';
   bookmarkBtn.style.cssText = 'float:right;background:transparent;border:1px solid #ddd;color:#888;padding:0.2rem 0.6rem;border-radius:4px;cursor:pointer;font-size:0.8rem;';
