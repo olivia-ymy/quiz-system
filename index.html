@@ -21,13 +21,26 @@
     <!-- 题库选择 -->
     <div id="import-section">
       <h2>选择题库</h2>
-      <div id="quiz-list"></div>
+
+      <!-- 内置题库 -->
+      <div id="built-in-section" style="margin-bottom:1.5rem;">
+        <div style="font-size:0.9rem;color:#666;margin-bottom:0.5rem;">📚 内置题库（点击直接开始）：</div>
+        <div id="built-in-banks"></div>
+      </div>
+
+      <!-- 已加载的题库 -->
+      <div style="border-top:1px solid #eee;padding-top:1rem;margin-top:0.5rem;">
+        <div style="font-size:0.9rem;color:#666;margin-bottom:0.5rem;">📂 已加载的题库：</div>
+        <div id="quiz-list"></div>
+      </div>
+
       <div style="margin-top:1rem;display:flex;gap:0.5rem;align-items:center;">
         <span style="font-size:0.9rem;color:#666;">练习模式：</span>
         <button id="btn-mode-seq" style="padding:0.3rem 0.8rem;border:1px solid #3498db;background:white;color:#3498db;border-radius:4px;cursor:pointer;">顺序练习</button>
         <button id="btn-mode-rand" style="padding:0.3rem 0.8rem;border:1px solid #27ae60;background:#27ae60;color:white;border-radius:4px;cursor:pointer;">随机练习</button>
       </div>
-      <p style="font-size:0.85rem;color:#888;margin-top:0.5rem;">首次使用：先准备好 data/questions_*.json 文件</p>
+
+      <p style="font-size:0.85rem;color:#888;margin-top:0.5rem;">也可以导入自己的题库 JSON 文件</p>
     </div>
 
     <!-- 题目区域 -->

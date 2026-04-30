@@ -33,6 +33,82 @@ async function loadProgressCloud() {
   } catch { return null; }
 }
 
+// ========== 内置题库配置 ==========
+const BUILTIN_BANKS = [
+  { file: 'questions_经济法_735押题.json', name: '经济法_735押题', subject: '经济法', total: 634 },
+  { file: 'questions_经济法_押题_pdf1.json', name: '经济法_押题_pdf1', subject: '经济法', total: 396 },
+  { file: 'questions_会计基础_押题_pdf2.json', name: '会计基础_押题_pdf2', subject: '会计基础', total: 390 }
+];
+
+// 从 URL 加载题库
+async function loadQuizFromURL(url, bankInfo) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('题库加载失败');
+  const data = await resp.json();
+  if (!data.questions || !Array.isArray(data.questions)) {
+    throw new Error('题库格式错误');
+  }
+  return data;
+}
+
+// 加载内置题库列表
+function renderBuiltInBanks() {
+  const container = document.getElementById('built-in-banks');
+  if (!container) return;
+  container.innerHTML = BUILTIN_BANKS.map(b => `
+    <div class="quiz-item" style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div class="quiz-item-name">${b.name}</div>
+        <div class="quiz-item-info">${b.subject || ''} · ${b.total} 题</div>
+      </div>
+      <button class="quiz-load-btn" data-file="${b.file}" style="padding:0.3rem 0.8rem;background:#27ae60;color:white;border:none;border-radius:4px;cursor:pointer;">开始练习</button>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.quiz-load-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const file = btn.dataset.file;
+      const bank = BUILTIN_BANKS.find(b => b.file === file);
+      try {
+        btn.textContent = '加载中…';
+        btn.disabled = true;
+        const data = await loadQuizFromURL('data/' + file, bank);
+        currentQuiz = data;
+        practiceMode = 'random';
+        document.getElementById('btn-mode-rand').style.background = '#27ae60';
+        document.getElementById('btn-mode-rand').style.color = 'white';
+        document.getElementById('btn-mode-seq').style.background = 'white';
+        document.getElementById('btn-mode-seq').style.color = '#3498db';
+        if (practiceMode === 'random') {
+          questions = shuffleArray([...currentQuiz.questions]);
+        } else {
+          questions = [...currentQuiz.questions];
+        }
+        questions.forEach((q, i) => { q.id = i; q.quizName = currentQuiz.name; });
+        sessionAnswered = 0;
+        answeredText.textContent = '';
+        const meta = getQuizMeta();
+        const existingIdx = meta.findIndex(m => m.name === currentQuiz.name);
+        if (existingIdx >= 0) {
+          meta[existingIdx] = { name: currentQuiz.name, subject: currentQuiz.subject, total: questions.length };
+        } else {
+          meta.push({ name: currentQuiz.name, subject: currentQuiz.subject, total: questions.length });
+        }
+        saveQuizMeta(meta);
+        renderQuizList();
+        document.getElementById('import-section').classList.add('hidden');
+        document.getElementById('question-area').classList.remove('hidden');
+        document.getElementById('quiz-name').textContent = currentQuiz.name;
+        showQuestion(0);
+      } catch (err) {
+        alert('加载失败：' + err.message);
+        btn.textContent = '开始练习';
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
 // 应用初始化
 async function initApp() {
   const cloud = await loadProgressCloud();
@@ -42,6 +118,7 @@ async function initApp() {
     if (cloud.stats) localStorage.setItem('quiz_stats', JSON.stringify(cloud.stats));
     if (cloud.answeredPerQuiz) localStorage.setItem('quiz_answered', JSON.stringify(cloud.answeredPerQuiz));
   }
+  renderBuiltInBanks();
   renderQuizList();
   renderWrongList();
   renderStats();

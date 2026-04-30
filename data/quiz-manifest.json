@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "banks": [
+    {
+      "file": "questions_会计基础_押题.json",
+      "name": "会计基础_押题",
+      "subject": "会计基础",
+      "total": 0
+    },
+    {
+      "file": "questions_会计基础_押题_pdf2.json",
+      "name": "会计基础_押题_pdf2",
+      "subject": "会计基础",
+      "total": 390
+    },
+    {
+      "file": "questions_经济法_735押题.json",
+      "name": "经济法_735押题",
+      "subject": "经济法",
+      "total": 634
+    },
+    {
+      "file": "questions_经济法_押题.json",
+      "name": "经济法_押题",
+      "subject": "经济法",
+      "total": 0
+    },
+    {
+      "file": "questions_经济法_押题_pdf1.json",
+      "name": "经济法_押题_pdf1",
+      "subject": "经济法",
+      "total": 396
+    }
+  ]
+}
