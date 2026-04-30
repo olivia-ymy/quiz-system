@@ -109,24 +109,43 @@ function renderBuiltInBanks() {
   });
 }
 
+// ========== 应用初始化（DOMReady + 错误保护） ==========
+function initAppSafe() {
+  try {
+    initApp().catch(err => {
+      console.error('initApp error:', err);
+    });
+  } catch (err) {
+    console.error('initApp sync error:', err);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAppSafe);
+} else {
+  initAppSafe();
+}
+
 // 应用初始化
 async function initApp() {
-  const cloud = await loadProgressCloud();
-  if (cloud) {
-    if (cloud.wrongQuestions) localStorage.setItem('quiz_wrong', JSON.stringify(cloud.wrongQuestions));
-    if (cloud.favorites) localStorage.setItem('quiz_favorites', JSON.stringify(cloud.favorites));
-    if (cloud.stats) localStorage.setItem('quiz_stats', JSON.stringify(cloud.stats));
-    if (cloud.answeredPerQuiz) localStorage.setItem('quiz_answered', JSON.stringify(cloud.answeredPerQuiz));
-  }
+  try {
+    const cloud = await Promise.race([
+      loadProgressCloud(),
+      new Promise(resolve => setTimeout(() => resolve(null), 3000))
+    ]);
+    if (cloud) {
+      if (cloud.wrongQuestions) localStorage.setItem('quiz_wrong', JSON.stringify(cloud.wrongQuestions));
+      if (cloud.favorites) localStorage.setItem('quiz_favorites', JSON.stringify(cloud.favorites));
+      if (cloud.stats) localStorage.setItem('quiz_stats', JSON.stringify(cloud.stats));
+      if (cloud.answeredPerQuiz) localStorage.setItem('quiz_answered', JSON.stringify(cloud.answeredPerQuiz));
+    }
+  } catch (e) { /* cloud sync fail, continue anyway */ }
   renderBuiltInBanks();
   renderQuizList();
   renderWrongList();
   renderStats();
   renderFavoritesList();
 }
-
-// 直接初始化
-initApp();
 
 let currentQuiz = null;       // 当前题库完整数据
 let questions = [];           // 当前题库题目数组
