@@ -1,6 +1,4 @@
-// app.js
-
-// app.js
+// app.js v2
 
 // ========== 云端同步配置（全局版） ==========
 const API_BASE = 'https://api.oyummy.top/quiz-api';
